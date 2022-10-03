@@ -1,0 +1,42 @@
+
+record c2state {
+    wrk   : list<float64>,
+    n     : list<s64>,
+}
+
+record c2summary {
+    n:     s64,
+    nmiss: s64,
+    x-avg: float64,
+    y-avg: float64,
+    corr:  float64,
+    r2:    float64,
+    b0:    float64,
+    b1:    float64,
+    sse:   float64
+}
+
+record cmstate {
+    nvar : s64,
+    sx   : list<float64>,
+    sy   : list<float64>,
+    sxx  : list<float64>,
+    syy  : list<float64>,
+    sxy  : list<float64>,
+    nxy  : list<float64>,
+}
+
+corr2-init  : func() -> c2state
+corr2-iter  : func(st: c2state, x: float64, y: float64) -> c2state
+corr2-merge : func(st1: c2state, st2: c2state) -> c2state
+corr2-term  : func(st: c2state) -> c2summary
+corr2-termd : func(st: c2state) -> float64
+
+corrmat-init : func() -> cmstate
+corrmat-iter : func(st: cmstate, vars: list<u8>) -> cmstate
+corrmat-merge: func(st1: cmstate, st2: cmstate) -> cmstate
+corrmat-term : func(st: cmstate) -> list<u8> 
+
+vec-pack-f64  : func(v: list<float64>) -> list<u8>
+vec-unpack-f64: func(v: list<u8>) -> list<float64>
+

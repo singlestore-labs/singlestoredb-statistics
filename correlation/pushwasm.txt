@@ -1,0 +1,44 @@
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   corr2_init
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   corr2_iter
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   corr2_merge
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   corr2_term
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   corr2_termd
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   corrmat_init
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   corrmat_iter
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   corrmat_merge
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   corrmat_term
+   
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   vec_unpack_f64
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./correlation.wit ./target/wasm32-wasi/release/correlation.wasm \
+   vec_pack_f64
