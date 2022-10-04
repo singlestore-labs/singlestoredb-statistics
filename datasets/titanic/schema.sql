@@ -29,5 +29,6 @@ load data local infile './titanic_test.csv'
   TRAILING NULLCOLS
   NULL defined by ''
   IGNORE 1 lines
-  replace into table titanic;
+  replace into table titanic
+  (PassengerId, Pclass, Name, Sex, age, SibSp, Parch, Ticket, Fare, Cabin, Embarked);
 
