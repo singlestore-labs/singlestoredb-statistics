@@ -1,7 +1,7 @@
 
 # <img src="https://github.com/singlestore-labs/singlestore-python/blob/main/resources/singlestore-logo.png" height="60" valign="middle"/> SingleStoreDB Correlation Analysis
 
-This project contains Rust code that computes the Pearson product-moment correlation coefficient between 
+This project contains Rust code that computes the Pearson product-moment correlation coefficient between
 two numeric variables or the matrix of all pairwise Pearson product-moment correlation coefficients
 between a set ( >=2 ) of numeric variables.
 
@@ -21,7 +21,7 @@ user-defined aggregate (UDA) functions. The SQL statements to create the functio
 
 2. If you want to develop on SingleStoreDB, check out the [singlestoredb-dev-image](https://github.com/singlestore-labs/singlestoredb-dev-image) repo
 
-3. Install the [SingleStoreDB Wasm Toolkit](https://github.com/singlestore-labs/singlestore-wasm-toolkit). This provides the WRIT utility to help test Wasm functions locally without the need to create a separate driver program. It also provide pushwasm, a utility that allows you to easily import your locally-built Wasm function into SingleStoreDB as a UDF or TVF. 
+3. Install the [SingleStoreDB Wasm Toolkit](https://github.com/singlestore-labs/singlestore-wasm-toolkit). This provides the WRIT utility to help test Wasm functions locally without the need to create a separate driver program. It also provide pushwasm, a utility that allows you to easily import your locally-built Wasm function into SingleStoreDB as a UDF or TVF.
 
 ## Steps
 The basic steps to extend SingleStoreDB with the capabilities in this package are as follows:
@@ -71,82 +71,11 @@ Compute the correlation between `sepal_width` and `sepal_length` for each iris s
 select species, corr2(sepal_width,sepal_length) from iris group by species;
 ```
 
-Compute the (lower triangular portion) of the matrix of correlation coefficients between variables `sepal_length`, `sepal_width`, and `petal_width`. This returns a JSON double array of lenght 6. 
+Compute the (lower triangular portion) of the matrix of correlation coefficients between variables `sepal_length`, `sepal_width`, and `petal_width`. This returns a JSON double array of lenght 6.
 ```
 select corrmat(vec_pack_f64([sepal_length, sepal_width, petal_width])) from iris;
 
 ```
-
-## About SingleStoreDB
-
-[Sign up](https://www.singlestore.com/try-free/) for a free SingleStore license. This allows you
-   to run up to 4 nodes up to 32 gigs each for free. Grab your license key from
-   [SingleStore portal](https://portal.singlestore.com/?utm_medium=osm&utm_source=github) and set it as an environment
-   variable.
-
-   ```bash
-   export SINGLESTORE_LICENSE="singlestore license"
-   ```
-
-## Resources
-
-* [Documentation](https://docs.singlestore.com)
-* [Twitter](https://twitter.com/SingleStoreDevs)
-* [SingleStore forums](https://www.singlestore.com/forum)
-
-
-
-
-
-## Usage
-
-Connections to the SingleStore database are made using the DB-API parameters
-`host`, `port`, `user`, `password`, etc, but they may also be done using
-URLs that specify these parameters as well (much like the
-[SQLAlchemy](https://www.sqlalchemy.org) package).
-```
-import singlestoredb as s2
-
-# Connect using the default connector
-conn = s2.connect('user:password@host:3306/db_name')
-
-# Create a cursor
-cur = conn.cursor()
-
-# Execute SQL
-cur.execute('select * from foo')
-
-# Fetch the results
-print(cur.description)
-for item in cur:
-    print(item)
-
-# Close the connection
-conn.close()
-```
-
-Connecting to the HTTP API is done as follows:
-```
-# Use the HTTP API connector
-conn = s2.connect('https://user:password@host:8080/db_name')
-```
-
-## License
-
-This library is licensed under the [Apache 2.0 License](https://raw.githubusercontent.com/singlestore-labs/singlestoredb-python/main/LICENSE?token=GHSAT0AAAAAABMGV6QPNR6N23BVICDYK5LAYTVK5EA).
-
-## Resources
-
-* [Documentation](https://singlestore-labs.github.io/singlestore-python)
-* [SingleStore](https://singlestore.com)
-* [Python](https://python.org)
-
-
-# open-source-template
-Template project for open source projects from SingleStore
-
-## Usage
-
 
 ## Resources
 
