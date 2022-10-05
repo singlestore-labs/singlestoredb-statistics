@@ -11,3 +11,6 @@ probability = "0.18.0"
 
 [lib]
 crate-type = ["cdylib"]
+
+[patch.crates-io]
+special = { git = "https://github.com/singlestore-labs/special.git" }
