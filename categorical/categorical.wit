@@ -1,0 +1,16 @@
+
+record state {
+    wrk   : list<float64>,
+}
+
+record chiresult {
+    df     : float64,
+    chisq  : float64,
+    pvalue : float64, 
+}
+
+chisq2-init  : func() -> state
+chisq2-iter  : func(st: state, nr: s64, nc: s64, i: s64, j: s64, cell: float64, rt: float64, ct: float64) -> state
+chisq2-merge : func(st1: state, st2: state) -> state
+chisq2-term  : func(st: state) -> chiresult
+
