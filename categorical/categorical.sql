@@ -1,4 +1,32 @@
 
+/*---------------------------------------------------------------*/
+/* Example of a pre-grouped table: the cell count are already    */
+/* computed in column Nij                                        */
+/* Example is from Section 8.13 in Ott, L.R. "An Introduction to"*/
+/* Statistical Methods and Data Analysis", Duxbury Press, 1993   */
+/* Usage: echo chisq_grouped('employee_sat','EmpClass','Opinion');*/
+create table if not exists test.employee_sat (
+    EmpClass text, Opinion text, Nij bigint(20)
+);
+delete from test.employee_sat;
+insert into test.employee_sat(EmpClass, Opinion, Nij) values 
+("Staff"        , "Favor"       , 30),
+("Staff"        , "Do not Favor", 15),
+("Staff"        , "Undecided"   , 15),
+("Faculty"      , "Favor"       , 40),
+("Faculty"      , "Do not Favor", 50),
+("Faculty"      , "Undecided"   , 10),
+("Administrator", "Favor"       , 10),
+("Administrator", "Do not Favor", 25),
+("Administrator", "Undecided"   ,  5)
+;
+/*---------------------------------------------------------------*/
+
+
+/*---------------------------------------------------------------*/
+/* Example of a small table with ungroupd data. Call chisq() for */
+/* a test of independence                                        */
+/* Usage: echo chisq('xclass','A','B');                          */
 create table if not exists test.xclass (
    A int, B int, Y double
 );
@@ -16,135 +44,157 @@ insert into test.xclass(A,B,Y) values
 (3, 1, 1.0),
 (3, 1, 1.1)
 ;
-echo chisq('xclass','A','B');
+/*---------------------------------------------------------------*/
 
-
+/*---------------------------------------------------------------*/
+/* Helper UDF to translate the return  from chisq_term to JSON   */
 delimiter //
-create or replace procedure chisq(tbl     varchar(100), 
-                                  rowvar  varchar(100), 
-                                  colvar  varchar(100))
-returns query(NumRows int, NumCols int, RowNum int, ColNum int, Cell double, RowTotal double, ColTotal double)
-as declare
-    qstr varchar(1024);
-    q query(NumRows int, NumCols int, RowNum int, ColNum int, Cell double, RowTotal double, ColTotal double);
+create or replace function chisq_term_json (
+    state record (
+        wrk  array(double not null) not null
+    ) not null)
+    returns json not null as
 begin
-    qstr = 'select * from (
-select';
-    qstr = concat(qstr,'(select count(distinct ', rowvar, ') from ', tbl, ') as NumRows,
-                        (select count(distinct ', colvar, ') from ', tbl, ') as NumCols,
-    t2.RowNum, t3.ColNum, t1.Cell, t2.RowTotal, t3.ColTotal
-from (
-    select ');
-    qstr = concat(qstr, rowvar, ' as "Row", ', colvar, ' as "Col", count(*) as "Cell" from ', tbl);
-    qstr = concat(qstr,' group by ', rowvar, ',', colvar, ') as t1');
-
-    qstr = concat(qstr, '
-inner join (
-    select ', rowvar, ' as "Row",
-            count(*) as RowTotal,
-            Row_Number() over(order by ', rowvar, ') as RowNum');
-    qstr = concat(qstr,' from ', tbl, ' group by ', rowvar, ') as t2 on t2.Row = t1.Row');
-  
-    qstr = concat(qstr,'
-inner join (
-    select ', colvar, ' as "Col",
-        count(*) as ColTotal,
-        Row_Number() over(order by ', colvar,') as ColNum');
-    qstr = concat(qstr,' from ', tbl, ' group by ', colvar, ') as t3 on t1.Col = t3.Col');
-    qstr = concat(qstr, ' order by t1.Row, t1.Col);' );
-
-    q = to_query(qstr);
-    return q;
+    return to_json(`chisq_term`(state));
 end //
 delimiter ;
+/*---------------------------------------------------------------*/
+
+/*---------------------------------------------------------------*/
+/* The aggregate function that performs a Chi-square test of     */
+/* independence for two classification variables.                */
+/* This aggregate function is called from the chisq( ) and       */
+/* chisq_grouped( ) procedures.                                  */
+create or replace aggregate chisq_agg(bigint(20) not null,   /* NumRows */
+                                      bigint(20) not null,   /* NumCols */
+                                      double     not null,   /* Cell    */
+                                      double     not null,   /* RowTotal*/
+                                      double     not null    /* ColTotal*/)
+    returns json not null
+    with state record (
+        wrk  array(double not null) not null
+    ) not null
+    initialize with `chisq_init`
+    iterate    with `chisq_iter`
+    merge      with `chisq_merge`
+    terminate  with  chisq_term_json;
+/*---------------------------------------------------------------*/
 
 
-
+/*---------------------------------------------------------------*/
+/* chisq_debug() generates the query for a Chi-square test of    */
+/* independence for two classificaition variables.               */
+/* Usage: echo chisq_debug('titanic','Survived','Pclass');       */
 delimiter //
-create or replace procedure chisq_debug(tbl     varchar(100) not null, 
-                                        rowvar  varchar(100) not null, 
-                                        colvar  varchar(100) not null)
+create or replace procedure chisq_debug(tbl    text, 
+                                        rowvar text, 
+                                        colvar text)
 returns text
 as declare
-  qstr varchar(1024);
+    qstr text;
 begin
-    qstr = 'select * from (
+    qstr = 'select chisq_agg(NumRows, NumCols, Cell, RowTotal, ColTotal) from (
 select';
     qstr = concat(qstr,'(select count(distinct ', rowvar, ') from ', tbl, ') as NumRows,
                         (select count(distinct ', colvar, ') from ', tbl, ') as NumCols,
-    t2.RowNum, t3.ColNum, t1.Cell, t2.RowTotal, t3.ColTotal
+    t1.Cell, t2.RowTotal, t3.ColTotal
 from (
     select ');
     qstr = concat(qstr, rowvar, ' as "Row", ', colvar, ' as "Col", count(*) as "Cell" from ', tbl);
-    qstr = concat(qstr,' group by ', rowvar, ',', colvar, ') as t1');
+    qstr = concat(qstr,' where ', rowvar, ' is not null and ', colvar, ' is not null group by ', rowvar, ',', colvar, ') as t1');
 
     qstr = concat(qstr, '
 inner join (
     select ', rowvar, ' as "Row",
-            count(*) as RowTotal,
-            Row_Number() over(order by ', rowvar, ') as RowNum');
-    qstr = concat(qstr,' from ', tbl, ' group by ', rowvar, ') as t2 on t2.Row = t1.Row');
+            count(*) as RowTotal');
+    qstr = concat(qstr,' from ', tbl, ' where ', rowvar, ' is not null and ',colvar, ' is not null group by ', rowvar, ') as t2 on t2.Row = t1.Row');
   
     qstr = concat(qstr,'
 inner join (
     select ', colvar, ' as "Col",
-        count(*) as ColTotal,
-        Row_Number() over(order by ', colvar, ') as ColNum');
-    qstr = concat(qstr,' from ', tbl, ' group by ', colvar, ') as t3 on t1.Col = t3.Col');
+        count(*) as ColTotal');
+    qstr = concat(qstr,' from ', tbl, ' where ', rowvar, ' is not null and ', colvar, ' is not null group by ', colvar, ') as t3 on t1.Col = t3.Col');
     qstr = concat(qstr, ' order by t1.Row, t1.Col);' );
-
     return qstr;
 end //
 delimiter ;
-
-call chisq('titanic','Survived','Pclass');
-echo chisq('titanic','Survived','Pclass');
-
-echo chisq_debug('titanic','Survived','Pclass');
+/*---------------------------------------------------------------*/
 
 
-echo chisq_debug('titanic','Survived','Pclass');
-
-    
-
-with
-  foo as (
-    select * from titanic
-    where survived is not null and Pclass is not null
-  ),
-  cell_counts as (
-    select
-      Survived as 'Survived',
-      Pclass   as 'Class',
-      count(*) as 'Cell'
-    from foo
-    group by Survived, Pclass
-  ),
-  v1_counts as (
-    select
-      Survived,
-      count(*) as RowTotal
-    from foo
-    group by Survived
-  ),
-  v2_counts as (
-    select
-      Pclass,
-      count(*) as ColTotal
-    from foo
-    group by Pclass
-  )
-select
-  (select count(distinct Survived) from foo) as NumRows,
-  (select count(distinct Pclass  ) from foo) as NumCols,
-  t1.Survived, t1.Class,
-  t1.Cell,
-  t2.RowTotal, t3.ColTotal
-from cell_counts as t1
-inner join v1_counts as t2 on t2.Survived = t1.Survived
-inner join v2_counts as t3 on t1.class    = t3.Pclass
-
-order by 3, 4
-option(materialize_ctes="off");
+/*---------------------------------------------------------------*/
+/* chisq_() generates the query for a Chi-square test of inde-   */
+/* pendence for two classificaition variables.                   */
+/* Usage: echo chisq('titanic','Survived','Pclass');             */
+delimiter //
+create or replace procedure chisq(tbl    text, 
+                                  rowvar text, 
+                                  colvar text)
+returns json not null
+as declare
+    res json not null;
+    q query(j json not null) = to_query(chisq_debug(tbl,rowvar,colvar));
+begin
+    res = scalar(q);
+    return res;
+end //
+delimiter ;
+/*---------------------------------------------------------------*/
 
 
+
+/*---------------------------------------------------------------*/
+/* chisq_grouped_debug() generates the query for a Chi-square    */
+/* test of independence for two classificaition variables when   */
+/* the input table contains already grouped data.                */
+/* Usage: echo chisq_grouped_debug('employee_sat','EmpClass','Opinion',"Nij"); */
+delimiter //
+create or replace procedure chisq_grouped_debug(tbl    text, 
+                                                rowvar text, 
+                                                colvar text,
+                                                grpvar text)
+returns text
+as declare
+    qstr text;
+begin
+    qstr = 'select chisq_agg(NumRows, NumCols, Cell, RowTotal, ColTotal) from (';
+    qstr = concat(qstr,' with ';
+    qstr = concat(qstr,' foo as ( select * from ', tbl, ' where ', rowvar, ' is not null and ', colvar, ' is not null),');
+    qstr = concat(qstr,' cell_counts as ( select ', rowvar, ' as "Row",', colvar, ' as "Col", sum(',grpvar,') as "Cell" ');
+    qstr = concat(qstr,' from foo group by ', rowvar, ', ', colvar, '),');
+
+    qstr = concat(qstr,' v1_counts as ( select ', rowvar, ' as "Row", sum(',grpvar,') as RowTotal from foo group by ', rowvar, '),');
+    qstr = concat(qstr,' v2_counts as ( select ', colvar, ' as "Col", sum(',grpvar,') as ColTotal from foo group by ', colvar, ') ');
+
+    qstr = concat(qstr, 'select (select count(distinct ', rowvar, ') from foo) as NumRows,');
+    qstr = concat(qstr, '       (select count(distinct ', colvar, ') from foo) as NumCols,');
+    qstr = concat(qstr, ' t1.Cell, t2.RowTotal, t3.ColTotal');
+    qstr = concat(qstr, ' from cell_counts as t1 ');
+    qstr = concat(qstr, ' inner join v1_counts as t2 on t2.Row = t1.Row');
+    qstr = concat(qstr, ' inner join v2_counts as t3 on t1.Col = t3.Col');
+    qstr = concat(qstr, ' order by 3)');
+    qstr = concat(qstr, ' option(materialize_ctes="off");');
+    return qstr;
+end //
+delimiter ;
+/*---------------------------------------------------------------*/
+
+/*---------------------------------------------------------------*/
+/* chisq_grouped() computes the Chi-square test of independence  */
+/* for two classificaition variables when the input table        */
+/* contains already grouped data.                                */
+/* Usage: echo chisq_grouped('employee_sat','EmpClass','Opinion',"Nij"); */
+delimiter //
+create or replace procedure chisq_grouped(tbl    text, 
+                                          rowvar text, 
+                                          colvar text,
+                                          grpvar text)
+returns json not null
+as declare
+    res json not null;
+    q query(j json not null) = to_query(chisq_grouped_debug(tbl,rowvar,colvar,grpvar));
+begin
+    res = scalar(q);
+    return res;
+end //
+delimiter ;
+/*---------------------------------------------------------------*/

@@ -1,5 +1,11 @@
-# open-source-template
-Template project for open source projects from SingleStore
+# <img src="https://github.com/singlestore-labs/singlestore-python/blob/main/resources/singlestore-logo.png" height="60" valign="middle"/> SingleStoreDB Statistics
+
+This project contains some basic statistical computations that extend SingleStoreDB with Wasm- (WebAssembly-) based user-defined functions (UDFs, UDAs, TVFs).
+
+## Correlation
+Computes pairwise correlations or correlation matrices (Pearson product-moment correlation)
+## Categorical
+Chi-square test of independence for r x c contingency tables
 
 ## Usage
 
@@ -14,6 +20,7 @@ Template project for open source projects from SingleStore
 
 ## Resources
 
+* [SingleStore](https://singlestore.com)
 * [Documentation](https://docs.singlestore.com)
 * [Twitter](https://twitter.com/SingleStoreDevs)
 * [SingleStore forums](https://www.singlestore.com/forum)
