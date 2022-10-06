@@ -1,0 +1,15 @@
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./categorical.wit ./target/wasm32-wasi/release/categorical.wasm \
+   chisq_init
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./categorical.wit ./target/wasm32-wasi/release/categorical.wasm \
+   chisq_iter
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./categorical.wit ./target/wasm32-wasi/release/categorical.wasm \
+   chisq_merge
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./categorical.wit ./target/wasm32-wasi/release/categorical.wasm \
+   chisq_term
