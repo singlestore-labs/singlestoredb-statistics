@@ -6,6 +6,8 @@ This project contains some basic statistical computations that extend SingleStor
 Computes pairwise correlations or correlation matrices (Pearson product-moment correlation)
 ## Categorical
 Chi-square test of independence for r x c contingency tables
+## Linreg
+Linear regression analysis
 
 ## Usage
 

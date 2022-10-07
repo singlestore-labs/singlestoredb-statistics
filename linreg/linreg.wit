@@ -1,0 +1,30 @@
+record state {
+    nvars : s64,
+    xpx   : list<float64>,
+}
+
+/* We cannot return this struct from a UDA, so we have */
+/* to construct a scalar return for now                */ 
+/*
+record mlrsummary {
+    nobs  : float64,
+    nc    : float64,
+    ss    : list<float64>,
+    df    : list<float64>,
+    fval  : float64,
+    fpval : float64,
+    est   : list<float64>,
+    std   : list<float64>,
+    tval  : list<float64>,
+    tpval : list<float64>,
+}
+*/
+
+mlr-init : func() -> state
+mlr-iter : func(st: state, y: float64, vars: list<u8> ) -> state
+mlr-merge: func(st1: state, st2: state) -> state
+mlr-term : func(st: state) -> list<u8>
+mlr-terml: func(st: state) -> list<u8>
+
+vec-pack-f64  : func(v: list<float64>) -> list<u8>
+vec-unpack-f64: func(v: list<u8>) -> list<float64>

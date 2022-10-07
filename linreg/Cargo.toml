@@ -1,5 +1,5 @@
 [package]
-name = "categorical"
+name = "linreg"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,11 +7,8 @@ edition = "2021"
 
 [dependencies]
 wit-bindgen-rust = { git = "https://github.com/bytecodealliance/wit-bindgen.git", rev = "60e3c5b41e616fee239304d92128e117dd9be0a7" }
-#probability = "0.18.0"
+byte-slice-cast = "1.2.1"
 statrs = "0.16.0"
 
 [lib]
 crate-type = ["cdylib"]
-
-# [patch.crates-io]
-# special = { git = "https://github.com/singlestore-labs/special.git" }

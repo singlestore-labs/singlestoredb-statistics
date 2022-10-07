@@ -11,9 +11,11 @@ wit_bindgen_rust::export!("categorical.wit");
 
 const EPS: f64 = 1e-12;
 
-extern crate probability;
-use probability::prelude::*;
-use probability::distribution::Gamma;
+extern crate statrs;
+use statrs::distribution::{ChiSquared, ContinuousCDF};
+// extern crate probability;
+// use probability::prelude::*;
+// use probability::distribution::Gamma;
 
 // Pull structres from the bindings of the wit file
 use crate::categorical::Chiresult;
@@ -62,8 +64,10 @@ use crate::categorical::State;   /* for pairwise correlation */
         let ntot = st.wrk[1];
         result.df    = st.wrk[0];
         result.chisq = ntot * (st.wrk[2] - 1.); 
-        let chidist = Gamma::new(result.chisq/2., 0.5);
-        result.pvalue = 1.-chidist.distribution(result.chisq);
+        let chidist = ChiSquared::new(result.df).unwrap();
+        result.pvalue = 1. - chidist.cdf(result.chisq);
+        // let chidist = Gamma::new(result.chisq/2., 0.5);
+        // result.pvalue = 1.-chidist.distribution(result.chisq);
 
         result
     }

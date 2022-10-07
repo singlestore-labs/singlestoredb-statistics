@@ -4,7 +4,7 @@
 /* computed in column Nij                                        */
 /* Example is from Section 8.13 in Ott, L.R. "An Introduction to"*/
 /* Statistical Methods and Data Analysis", Duxbury Press, 1993   */
-/* Usage: echo chisq_grouped('employee_sat','EmpClass','Opinion');*/
+/* Usage: echo chisq_grouped('employee_sat','EmpClass','Opinion','Nij');*/
 create table if not exists test.employee_sat (
     EmpClass text, Opinion text, Nij bigint(20)
 );
