@@ -65,3 +65,11 @@ select mlr(oxygen,vec_pack_f64([Age, Weight])) from fitness;
 
 /* with group by processing */
 select AgeGroup, mlr(oxygen,vec_pack_f64([Weight, RunPulse])) from fitness group by AgeGroup;
+
+
+select slr(Salnty,T_degc) from bottle where T_degc is not null and Salnty is not null;
+
+select slr(sepal_width,sepal_length) from iris;
+select mlr(sepal_width,vec_pack_f64([sepal_length])) from iris;
+
+select mlr(Salnty,vec_pack_f64([T_degc])) from bottle where T_degc is not null and Salnty is not null;

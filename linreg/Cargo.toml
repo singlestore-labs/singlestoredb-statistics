@@ -11,4 +11,7 @@ byte-slice-cast = "1.2.1"
 statrs = "0.16.0"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib"]
+path = "src/lib.rs"
+name = "linreg"
+

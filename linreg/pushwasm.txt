@@ -1,5 +1,39 @@
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
+   aov_init
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
+   aov_iter
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
+   aov_merge
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
+   aov_term
+
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
+   slr_init
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
+   slr_iter
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
+   slr_merge
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
+   slr_term
+
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
+   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    mlr_init
 
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
@@ -17,40 +51,15 @@
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    mlr_terml
-
-./pushwasm --force $SINGLESTOREDB_CONNSTRING \
-   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
-   vec_unpack_f64
-
-./pushwasm --force $SINGLESTOREDB_CONNSTRING \
-   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
-   vec_pack_f64
-
-
-
-
-/*
-./pushwasm --force $SINGLESTOREDB_FLY_CONNSTRING \
-   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
-   mlr_init
-
-./pushwasm --force $SINGLESTOREDB_FLY_CONNSTRING \
-   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
-   mlr_iter
-
-./pushwasm --force $SINGLESTOREDB_FLY_CONNSTRING \
-   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
-   mlr_merge
-
-./pushwasm --force $SINGLESTOREDB_FLY_CONNSTRING \
-   --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
-   mlr_term
    
-./pushwasm --force $SINGLESTOREDB_FLY_CONNSTRING \
+
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    vec_unpack_f64
 
-./pushwasm --force $SINGLESTOREDB_FLY_CONNSTRING \
+./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    vec_pack_f64
-*/
+
+
+

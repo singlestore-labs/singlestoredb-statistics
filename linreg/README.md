@@ -1,18 +1,17 @@
 # <img src="https://github.com/singlestore-labs/singlestore-python/blob/main/resources/singlestore-logo.png" height="60" valign="middle"/> SingleStoreDB Regression Analysis
 
-This project contains Rust code and SQL statements to perform basic linear regression modeling.
+This project contains Rust code and SQL statements to perform basic linear regression modeling and analysis of variance for fixed-effects models.
 
 ## Steps
 
 The basic steps to extend SingleStoreDB with the capabilities in this package are as follows:
 
 1. Compile the Rust crate to Wasm
-2. Push the functions in the `categorical.wasm` module to the database
-3. Run the SQL commands in `categorical.sql` to create aggregate functions and stored procedures.
+2. Push the functions in the `linreg.wasm` module to the database
+3. Run the SQL commands in `linreg.sql` to create aggregate functions and stored procedures.
 4. Run SQL queries that use the stored procedures.
 
 ### Compiling
-
 ```
   /* for debug build */
   cargo wasi build
@@ -34,7 +33,7 @@ See the file `pushwasm.txt` for the commands for all functions in this module.
 
 Run the file `linreg.sql` in SingleStoreDB to create the UDAs and helper UDFs.
 
-See  `schema.sql` for an example.
+See  `schema.sql` for examples.
 
 ## Resources
 

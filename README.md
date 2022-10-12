@@ -7,7 +7,8 @@ Computes pairwise correlations or correlation matrices (Pearson product-moment c
 ## Categorical
 Chi-square test of independence for r x c contingency tables
 ## Linreg
-Linear regression analysis
+Linear regression analysis and Analysis of Variance for fixed-effects models
+
 
 ## Usage
 

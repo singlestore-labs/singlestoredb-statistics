@@ -3,6 +3,15 @@ record state {
     xpx   : list<float64>,
 }
 
+record slrstate {
+    xpx   : list<float64>,
+}
+
+record aovstate {
+    efflev : list<s64>,
+    xpx    : list<float64>,
+}
+
 /* We cannot return this struct from a UDA, so we have */
 /* to construct a scalar return for now                */ 
 /*
@@ -20,11 +29,52 @@ record mlrsummary {
 }
 */
 
+record slrsummary {
+    b0:    float64,
+    b1:    float64,
+    n:     float64,
+    r2:    float64,
+    sse:   float64,
+    pvalue:float64
+}
+
+/* ---------------------------------------------------------- */
+/* Simple linear regression                                   */
+slr-init : func() -> slrstate
+slr-iter : func(st: slrstate, y: float64, x: float64 ) -> slrstate
+slr-merge: func(st1: slrstate, st2: slrstate) -> slrstate
+slr-term : func(st: slrstate) -> slrsummary
+/* ---------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------- */
+/* Multiple linear regression, regressors are pass as blobs   */
 mlr-init : func() -> state
 mlr-iter : func(st: state, y: float64, vars: list<u8> ) -> state
 mlr-merge: func(st1: state, st2: state) -> state
 mlr-term : func(st: state) -> list<u8>
 mlr-terml: func(st: state) -> list<u8>
 
+mlr-iter-debug  : func(st: state, y: float64, xrow: list<float64> ) -> state
+mlr-term-debug  : func(st: state) -> list<float64>
+mlr-terml-debug : func(st: state) -> list<float64>
+/* ---------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------- */
+/* Analysis of variance                                       */
+aov-iter-debug : func(st: aovstate, xrow: list<float64>) -> aovstate
+aov-term-debug: func(st : aovstate) -> list<float64>
+
+aov-init : func() -> aovstate
+aov-iter : func(st : aovstate, xpacked: list<u8> ) -> aovstate
+aov-merge: func(st1: aovstate, st2: aovstate) -> aovstate
+aov-term : func(st : aovstate) -> list<u8>
+/* ---------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------- */
+/* Utilities                                                  */
 vec-pack-f64  : func(v: list<float64>) -> list<u8>
 vec-unpack-f64: func(v: list<u8>) -> list<float64>
+/* ---------------------------------------------------------- */
