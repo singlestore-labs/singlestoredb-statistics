@@ -1,3 +1,5 @@
+/*--------------------------------------------------------------*/
+/* Analysis of variance                                         */
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    aov_init
@@ -13,8 +15,11 @@
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    aov_term
+/*--------------------------------------------------------------*/
 
 
+/*--------------------------------------------------------------*/
+/* Simple linear regression                                     */
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    slr_init
@@ -30,8 +35,11 @@
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    slr_term
+/*--------------------------------------------------------------*/
 
 
+/*--------------------------------------------------------------*/
+/* Multiple linear regression                                   */
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    mlr_init
@@ -51,8 +59,10 @@
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    mlr_terml
+/*--------------------------------------------------------------*/
    
-
+/*--------------------------------------------------------------*/
+/* Utility functions                                            */
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    vec_unpack_f64
@@ -60,6 +70,7 @@
 ./pushwasm --force $SINGLESTOREDB_CONNSTRING \
    --wit ./linreg.wit ./target/wasm32-wasi/release/linreg.wasm \
    vec_pack_f64
+/*--------------------------------------------------------------*/
 
 
 

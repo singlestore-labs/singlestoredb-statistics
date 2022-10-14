@@ -9,11 +9,6 @@
 
 wit_bindgen_rust::export!("linreg.wit");
 
-const EPS: f64 = 1e-12;
-
-extern crate statrs;
-use statrs::distribution::{StudentsT, ContinuousCDF};
-use statrs::distribution::{FisherSnedecor};
 use byte_slice_cast::*;
 
 use crate::linreg::State;
@@ -21,7 +16,10 @@ use crate::linreg::Slrstate;
 use crate::linreg::Aovstate;
 use crate::linreg::Slrsummary;
 use crate::matrix::*;
-pub mod matrix;
+use crate::aovreg::*;
+
+pub mod matrix; 
+pub mod aovreg;
 
 struct Linreg;
 
@@ -30,7 +28,7 @@ impl linreg::Linreg for Linreg {
     /*----------------------------------------------------------*/
     /* AOV                                                      */
     fn aov_init() -> Aovstate {
-        Aovstate { efflev: Vec::new(), xpx  : Vec::new(),}
+        Aovstate { efflev: Vec::new(), xpx: Vec::new(),}
     }
  
     /* aov_agg(vec_pack_f64([ NumX0, NumX1, Target, X0Level, X1Level])) */
@@ -39,54 +37,25 @@ impl linreg::Linreg for Linreg {
         Self::aov_iter(in_state,data_packed)
     }
 
-    fn aov_iter(in_state:Aovstate, xpacked:Vec<u8>) -> Aovstate {
+    fn aov_iter(mut in_state:Aovstate, xpacked:Vec<u8>) -> Aovstate {
         let data_row = Self::vec_unpack_f64(xpacked);
-        /* Some of the sizes used here */
-        // nfac  = number of factors
-        // nc    = number of coefficients (includes intercept)
-        // nc1   = size of x || y row
-        // nsym1 = allocation size for lower-triangular XpX with Y-border 
-        let nfac   = (data_row.len()-1)/2;
-        let nc = 1 + data_row[0..nfac].iter().sum::<f64>() as usize;
-        let nc1  : usize = nc + 1;
-        let nsym1: usize = nc1 * (nc1 + 1) / 2;
-        let mut st: Aovstate;
-        let mut vec : Vec<f64> = vec![0.;nc1];
 
         if in_state.xpx.is_empty() {
-            st = Aovstate { 
-                efflev : vec![0 ; nfac+1],
-                xpx    : vec![0.; nsym1],
-            };
-            st.efflev[0] = 1; // intercept
+            // nfac  = number of factors
+            // nc1   = size of x || y row, includes intercept
+            let nfac   = (data_row.len()-1)/2;
+            let nc1 = 2 + data_row[0..nfac].iter().sum::<f64>() as usize;
+            let nsym1: usize = nc1 * (nc1 + 1) / 2;
+            in_state.efflev = vec![0 ; nfac+1];
+            in_state.xpx    = vec![0.; nsym1 ];
+
+            in_state.efflev[0] = 1; // intercept
             for i in 0..nfac {
-                st.efflev[i+1] = data_row[i] as i64;
+                in_state.efflev[i+1] = data_row[i] as i64;
             }
-        } else {
-            st = Aovstate {
-                efflev : in_state.efflev.to_vec(), 
-                xpx    : in_state.xpx.to_vec(),
-            };
         }
-        /* build the dense x-row */
-        vec[0] = 1.; // the intercept
-        let mut has_nan = false;
-        let mut pos : usize = 0; 
-        for i in 0..nfac { 
-            pos += st.efflev[i] as usize; // starting position for this effect
-            let value = data_row[nfac+1+i] - 1.; // 0-based level
-            if value.is_nan() {
-                has_nan = true;
-                break;
-            }
-            let level= (data_row[nfac + 1 + i] as usize) - 1; // level of this variable
-            vec[pos+level] = 1.;  // position in the overall X row
-        }
-        vec[nc] = data_row[nfac];
-        if !has_nan {
-            sscp(&mut st.xpx,&vec,nc1);
-        }
-        st
+        aov_add_row(data_row, &mut in_state.xpx, &in_state.efflev);
+        in_state
     }
 
 
@@ -102,86 +71,7 @@ impl linreg::Linreg for Linreg {
     }
 
     fn aov_term_debug(mut st:Aovstate) -> Vec<f64> {
-        // nfac  = number of factors
-        // nc    = number of coefficients (includes intercept)
-        // nc1   = size of x || y row
-        // nsym1 = allocation size for lower-triangular XpX with Y-border 
-        let neff= st.efflev.len();
-        let nfac= neff - 1; 
-        let nc  = st.efflev.iter().sum::<i64>() as usize;
-        let nc1  : usize = nc + 1;
-        let nsym1: usize = nc1 * (nc1 + 1) / 2;
-
-        let mut vec  : Vec<f64> = vec![0.; nc1];
-        let mut work : Vec<f64> = vec![0.; nc1];
-
-        let noutcol = 5;
-        let mut result : Vec<f64> = vec![0.; noutcol*(neff+3)];
-        let mut pos = 0;
-        let mut ss_ctotal = st.xpx[nsym1-1];
-        let mut df_ctotal = st.xpx[0];
-        let mut df_model = 0;
-        let mut row: usize = 0;
-
-        /* For each effect compute df  SS  MS  F Pr>F */
-        for i in 0..neff {
-            let ss_prev = st.xpx[nsym1-1];
-            let nlev = st.efflev[i] as usize;
-            let df = sweep_eff(&mut st.xpx,nc1,pos,nlev,&mut work);
-            if df > 0 {
-                // we swept some rows
-                if i == 0 {
-                    ss_ctotal = st.xpx[nsym1-1];
-                    df_ctotal -= df as f64;
-                } else {
-                    df_model += df;
-                }
-            }           
-            let sse =  st.xpx[nsym1-1]; // SS(Error) after having swept out all previous effects 
-            row = i*noutcol;
-            result[row] = df as f64;
-            if df > 0 {
-                result[row+1] = ss_prev - sse;       // SS(effect)
-                result[row+2] = (ss_prev - sse)/(df as f64);  // MS(effect)
-            }
-            pos += nlev;
-        }
-        let ss_model = ss_ctotal - st.xpx[nsym1-1];
-        let df_error = df_ctotal - df_model as f64;
-        let ms_error = st.xpx[nsym1-1] / df_error;
-        // Compute mean squares, F statistics, p-values
-        for i in 0..neff {
-            row = i*noutcol;
-            let fstat = result[row+2] / ms_error;
-            result[row+3] = fstat; // F value
-
-            let fdist_result = FisherSnedecor::new(result[row],df_error);
-            let fdist = match fdist_result {
-                Ok(fdist) => result[row+4]= 1.-fdist.cdf(fstat),
-                Err(_) => result[row+4] = -1.,
-            };
-        }
-        // Add the overall Anova results at the bottom
-        row = 5*neff; // Error row
-        result[row  ] = df_error;
-        result[row+1] = st.xpx[nsym1-1];
-        result[row+2] = ms_error;
-        
-        row = 5*(neff+1); // Model row
-        result[row  ] = df_model as f64;
-        result[row+1] = ss_model;
-        result[row+2] = ss_model / df_model as f64;
-        result[row+3] = result[row+2] / ms_error;
-        let fdist_result = FisherSnedecor::new(result[row],df_error);
-        let fdist = match fdist_result {
-            Ok(fdist) => result[row+4] = 1. - fdist.cdf(result[row+3]),
-            Err(_) => result[row+4] = -1.,
-        };
-        row = 5*(neff+2); // Corrected Total
-        result[row  ] = df_ctotal;
-        result[row+1] = ss_ctotal;
-
-        result
+          aov_terminate(&mut st.xpx, &st.efflev)
     }
 
     fn aov_term(mut st:Aovstate) -> Vec<u8> {
@@ -198,10 +88,7 @@ impl linreg::Linreg for Linreg {
     }
 
     fn slr_iter(mut st:Slrstate, y:f64, x:f64) -> Slrstate {
-        let mut xrow = vec![1.;3];
-        xrow[1] = x;
-        xrow[2] = y;
-        sscp(&mut st.xpx,&xrow,3);
+        slr_add_row(y, x, &mut st.xpx);
         st
     }
 
@@ -212,27 +99,17 @@ impl linreg::Linreg for Linreg {
 
     fn slr_term(mut st:Slrstate) -> Slrsummary {
         let mut out = Slrsummary{b0:0., b1:0., n:0., r2: 0., sse:0., pvalue:0.,};
-        let mut work : Vec<f64> = vec![0.; 3];
+        let mut slrout = Slroutput{..Default::default()};
 
-        out.n = st.xpx[0];
-        if out.n > 0. {
-            let ss_total = sweep_xpx(&mut st.xpx, 3, &mut work);
-            out.b0  = st.xpx[3];
-            out.b1  = st.xpx[4];
-            out.sse = st.xpx[5];
-            out.r2  = 1. - out.sse/ss_total;
-            let dfe = out.n-2.;
-            let mse = out.sse / dfe;
-            let stder = -1. * st.xpx[2] * mse;
-            if stder > EPS {
-                let tstat = out.b1 / stder.sqrt();
-                let tdist_result = StudentsT::new(0.0, 1.0, dfe);
-                let tdist = match tdist_result {
-                    Ok(tdist) => out.pvalue = 2.*(1. - tdist.cdf(tstat.abs())),
-                    Err(_) => out.pvalue = -1.,
-                };
-            }
-        }
+        slrout = slr_terminate(&mut st.xpx, slrout);
+
+        out.n      = slrout.n  as f64;
+        out.b0     = slrout.b0;
+        out.b1     = slrout.b1;
+        out.sse    = slrout.sse;
+        out.r2     = slrout.r2;
+        out.pvalue = slrout.pval;
+
         out
    }
     /* eo SLR                                                   */
@@ -241,7 +118,7 @@ impl linreg::Linreg for Linreg {
     /*----------------------------------------------------------*/
     /* MLR Begin                                                */
     fn mlr_init() -> State {
-        State {nvars: 0, xpx  : Vec::new(), }
+        State {nvars: 0, xpx: Vec::new(), }
     }
 
     fn mlr_iter_debug(in_state:State, y:f64, xrow:Vec<f64>) -> State {
@@ -249,41 +126,19 @@ impl linreg::Linreg for Linreg {
         Self::mlr_iter(in_state,y, data_packed)
     }
 
-    fn mlr_iter(in_state:State, y: f64, vars:Vec<u8>) -> State {
+    fn mlr_iter(mut in_state:State, y: f64, vars:Vec<u8>) -> State {
         let data_row = Self::vec_unpack_f64(vars);
-        let nvars  = data_row.len();     /* number of regressors   */
-        let nc   : usize = nvars+1;             /* number of coefficients */
-        let nc1  : usize = nc + 1;              /* size of x || y row     */
-        let nsym1: usize = nc1 * (nc1 + 1) / 2; /* room for Y-border      */
-        let mut st: State;
-        let mut vec : Vec<f64> = vec![0.;nc1];
 
         if in_state.xpx.is_empty() {
-            st = State {
-                nvars : nvars as i64,
-                xpx   : vec![0.; nsym1],
-            };
-        } else {
-            st = State {
-                nvars : nvars as i64,
-                xpx   : in_state.xpx.to_vec(),
-            };
+            let nvars  = data_row.len();     /* number of regressors   */
+            let nc   : usize = nvars+1;             /* number of coefficients */
+            let nc1  : usize = nc + 1;              /* size of x || y row     */
+            let nsym1: usize = nc1 * (nc1 + 1) / 2; /* room for Y-border      */
+            in_state.nvars = nvars as i64;
+            in_state.xpx   = vec![0.; nsym1];
         }
-  
-        vec[0] = 1.; // the intercept
-        vec[1..nc].clone_from_slice(&data_row[..nvars]);
-        vec[nc] = y;
-        let mut has_nan = false;
-        for i in 0..nvars {
-            if data_row[i].is_nan() {
-                has_nan = true;
-                break;
-            }
-        }
-        if !has_nan {
-            sscp(&mut st.xpx,&vec,nc1);
-        }
-        st
+        mlr_add_row(y,data_row,&mut in_state.xpx);
+        in_state
     }
 
     fn mlr_merge(mut st1:State,mut st2:State,) -> State {
@@ -292,13 +147,6 @@ impl linreg::Linreg for Linreg {
         } else if st2.xpx.is_empty() {
             st1
         } else {
-            // let mut st = State {
-            //     nvars  : st1.nvars,  
-            //     xpx    : st1.xpx.to_vec(),
-            // };
-            // for i in 0..st1.xpx.len() {
-            //     st1.xpx[i] += st2.xpx[i];
-            // }
             vector_add(&mut st1.xpx,&st2.xpx);
             st1
         }
@@ -307,11 +155,10 @@ impl linreg::Linreg for Linreg {
     fn mlr_term_debug(mut st:State) -> Vec<f64> {   
         let nvars = st.nvars as usize;
         let nc   : usize = nvars+1;  // accounts for intercept
-        let nc1  : usize = nc+1;     // size of x || y row 
         let nsym   = nc * (nc+1)/2;
-        let mut work   : Vec<f64> = vec![0.; nc1];
-        let mut result : Vec<f64> = vec![0.; nc ];
-        sweep_xpx(&mut st.xpx, nc1, &mut work);    /* SS(Total) */
+        let mut result : Vec<f64> = vec![0.;nc];
+
+        mlr_terminate(&mut st.xpx,nc);
         result[0..nc].clone_from_slice(&st.xpx[nsym..(nsym+nc)]);
         result
     }
@@ -323,77 +170,7 @@ impl linreg::Linreg for Linreg {
 
     fn mlr_terml_debug(mut st: State) -> Vec<f64> {
         let nvars = st.nvars as usize;
-        let nc   : usize = nvars+1;
-        let nc1  : usize = nc+1;    /* size of x || y row */
-        let nsym  = nc * (nc+1)/2;
-        let nsym1 = nc1 * (nc1+1)/2;
-        let mut work   : Vec<f64> = vec![0.0; nc1];
-        
-        /* How the results will be laid out in the blob */
-        /* nobs | nc | ss[0..3] | df[0..3] | Fval | pval | est[0..nc] | std[0..nc] | tval[0..nc] | tpval[0..nc] */
-
-        let nalloc : usize = 2 + 6 + 2 + nc * 4;
-        let mut result : Vec<f64> = vec![0.; nalloc];
-        let mut index : usize = 0;
- 
-        result[index  ] = st.xpx[0];
-        result[index+1] = nc as f64;
-        index  += 2;
-        /* The sums of squares */
-        let nobs = st.xpx[0]; 
-        result[index+2] = sweep_xpx(&mut st.xpx, nc1, &mut work); /* SS(Total) */
-        result[index+1] = st.xpx[nsym1-1];                            /* SS(Error) */
-        result[index  ] = result[index+2] - result[index+1];          /* SS(Model) */
-        let mut ms_model = result[index  ];
-        let mut ms_error = result[index+1];
-        index += 3;
-
-        /* The degrees of freedom */
-        result[index  ] = nvars as f64;                          /* df(model) */
-        result[index+1] = nobs - nc as f64;                      /* df(error) */
-        result[index+2] = nobs - 1.;                             /* df(total, corrected) */
-        ms_model /= result[index];
-        ms_error /= result[index+1];
-
-        let fdist_result = FisherSnedecor::new(result[index],result[index+1]);
-        let tdist_result = StudentsT::new(0.0, 1.0, result[index+1]);
-        index += 3;
-        /* F statistic and p-value */       
-        result[index  ] = ms_model / ms_error;
-        let fdist = match fdist_result {
-            Ok(fdist) => result[index+1] = 1. - fdist.cdf(result[index]),
-            Err(_) => result[index+1] = -1.,
-        };
-        index += 2;
-
-        /* Coefficients */
-        let mut est = vec![0.;nc];
-        est[0..nc].clone_from_slice(&st.xpx[nsym..(nsym+nc)]);
-
-        let mut dindex : usize = 0;
-        /* extract the diagonals and compute the standard errors */        
-        for i in 0..nc {
-            /* estimate */
-            result[index+i] = est[i];
-            if i > 0 { dindex += i+1; }
-            let s2 = -1. * st.xpx[dindex] * ms_error;
-            if s2 > crate::EPS {
-                /* standard error */
-                result[index+nc+i] = s2.sqrt();
-            }
-            if result[index+nc+i] > crate::EPS {
-                /* t statistic */
-                let tstat = est[i]/result[index+nc+i];
-                result[index+2*nc+i] = tstat;
-                /* p value */
-                let tdist = match tdist_result { 
-                    Ok(tdist) => result[index+3*nc+i] = 2.0*(1. -  tdist.cdf(tstat.abs())),
-                    Err(_) => result[index+3*nc+i] = -1.,
-                };
-                // result[index+3*nc+i] = 2.0 * (1. -  tdist.cdf(1.96)); 
-            }
-        }
-        result
+        mlr_terminate_long(&mut st.xpx,nvars)
     }
 
     /*---Return vectors of floats for the estimates, standard errors, t-values */
@@ -403,6 +180,7 @@ impl linreg::Linreg for Linreg {
     }
     /* eo MLR                                                   */
     /*----------------------------------------------------------*/
+ 
  
     /*----------------------------------------------------------*/
     /* Utilities                                                */
@@ -414,8 +192,7 @@ impl linreg::Linreg for Linreg {
     }
     /* eo Utilities                                             */
     /*----------------------------------------------------------*/
- 
-   
+    
 }
 
 

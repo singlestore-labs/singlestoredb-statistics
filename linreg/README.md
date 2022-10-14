@@ -9,7 +9,7 @@ The basic steps to extend SingleStoreDB with the capabilities in this package ar
 1. Compile the Rust crate to Wasm
 2. Push the functions in the `linreg.wasm` module to the database
 3. Run the SQL commands in `linreg.sql` to create aggregate functions and stored procedures.
-4. Run SQL queries that use the stored procedures.
+4. Run SQL queries that use the UDAs and/or stored procedures.
 
 ### Compiling
 ```
@@ -33,7 +33,34 @@ See the file `pushwasm.txt` for the commands for all functions in this module.
 
 Run the file `linreg.sql` in SingleStoreDB to create the UDAs and helper UDFs.
 
-See  `schema.sql` for examples.
+### Run analyses through SQL queries
+
+See  `schema.sql` for regression examples using the `slr()` function for simple linear regression, the `mlr()` function for multiple linear regression with short output (just the regression coefficients), and the `mlrl()` function for multiple linear regression with detailed output. 
+
+```
+select mlr(oxygen,vec_pack_f64([Age, Weight, RunTime, RestPulse, RunPulse, MaxPulse])) from fitness;
+
+/* Long output, small model                                     */
+select mlrl(oxygen,vec_pack_f64([Age, Weight])) from fitness;
+
+/* Short output: just the regression coefficients               */
+select mlr(oxygen,vec_pack_f64([Age, Weight])) from fitness;
+
+/* Simple linear regression using the slr() and mlr() functions */
+select slr(oxygen,Age) from fitness;
+select slr(oxygen,Age) from fitness group by agegroup;
+
+select mlr(oxygen,vec_pack_f64([Age])) from fitness; 
+select mlrl(oxygen,vec_pack_f64([Age])) from fitness; 
+```
+
+To run an analysis of variance, use the `aov()` stored procedure (created in `linreg.sql`).
+For example, the analysis of variance for Survival with factors SibSp and Pclass in the titanic data set is invoked with
+
+```
+echo aov('titanic','Survived',['SibSp','Pclass']);
+```
+
 
 ## Resources
 

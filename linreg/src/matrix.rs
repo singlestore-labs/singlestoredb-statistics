@@ -1,3 +1,9 @@
+/*---------------------------------------------------------------*/
+/* Some basic vector and matrix routines to support the          */
+/* statistical calculations.                                     */
+/*---------------------------------------------------------------*/
+
+const EPS: f64 = 1e-12;
 
 fn vector_dot_product(a: &[f64], b: &[f64]) -> f64 {
     a.iter().zip(b).map(|(a, b)| a * b).sum()
@@ -74,7 +80,7 @@ fn sweep_row(xpx : &mut [f64], n:usize, k : usize, work : &mut [f64]) -> bool {
     let mut start_pos = 0;
     let d = xpx[trik+k]; // the pivot element
     let mut swept = true;
-    if d.abs() < crate::EPS {
+    if d.abs() < EPS {
         // zero the kth row and column
         for i in 0..k {
             xpx[trik+i] = 0.;

@@ -171,9 +171,9 @@ begin
 end //
 delimiter ;
 
-
+/*
 echo aov_debug('titanic','Survived',['SibSp','Pclass']);
-
+*/
 
 /*---------------------------------------------------------------*/
 /* aov() generates the query for a Chi-square test of inde-   */
@@ -195,21 +195,10 @@ delimiter ;
 /*---------------------------------------------------------------*/
 
 
+/*---------------------------------------------------------------*/
+/* Example: Survival as a function of SibSp and Pclass factors   */
+/* for the titanic data.                                         */
+/*
 echo aov('titanic','Survived',['SibSp','Pclass']);
-
-
-/* 
-select aov_agg(vec_pack_f64([ NumX0,NumX1,Target,X0Level, X1Level])) from ( 
-    with foo as ( select Survived as "Target", SibSp as X0, Pclass as X1 from titanic 
-    where Survived is not null and SibSp is not null and Pclass is not null),
-    X0_counts as (select X0, Row_Number() over(order by X0) as X0Level from foo group by X0), 
-    X1_counts as (select X1, Row_Number() over(order by X1) as X1Level from foo group by X1) 
-    select (select count(distinct X0) :> DOUBLE from foo) as NumX0,
-    (select count(distinct X1) :> DOUBLE from foo) as NumX1, 
-    t0.Target :> DOUBLE as "Target", 
-    t1.X0Level :> DOUBLE as 'X0Level', 
-    t2.X1Level :> DOUBLE as "X1Level" 
-    from foo as t0  inner join X0_counts as t1 on t1.X0 = t0.X0 inner join X1_counts as t2 on t2.X1 = t0.X1) 
-    option(materialize_ctes="off");
-
 */
+/*---------------------------------------------------------------*/

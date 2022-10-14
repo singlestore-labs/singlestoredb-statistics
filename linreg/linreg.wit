@@ -12,23 +12,6 @@ record aovstate {
     xpx    : list<float64>,
 }
 
-/* We cannot return this struct from a UDA, so we have */
-/* to construct a scalar return for now                */ 
-/*
-record mlrsummary {
-    nobs  : float64,
-    nc    : float64,
-    ss    : list<float64>,
-    df    : list<float64>,
-    fval  : float64,
-    fpval : float64,
-    est   : list<float64>,
-    std   : list<float64>,
-    tval  : list<float64>,
-    tpval : list<float64>,
-}
-*/
-
 record slrsummary {
     b0:    float64,
     b1:    float64,

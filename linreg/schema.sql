@@ -1,7 +1,7 @@
 
 /*-----------------------------------------------------------------------------*/
 /* 
-Example from the PROC REG documentation of SAS:
+Multiple linear regression example from the PROC REG documentation of SAS:
 https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.3/statug/statug_reg_examples02.htm
 
 Oxygen = f(Age, Weight, RunTime, RestPulse, RunPulse, MaxPulse)
@@ -47,29 +47,138 @@ add column agegroup as (case
     when age >= 44 and age < 50 then "44-50" 
     else "> 50" end) persisted text;
 
-/* Examples */
-/* Long output, full model */
+/*--------------------------------------------------------------*/
+/* Examples                                                     */
+/* Long output, full model                                      */
 select mlr(oxygen,vec_pack_f64([Age, Weight, RunTime, RestPulse, RunPulse, MaxPulse])) from fitness;
 
-/* Long output, small model */
+/* Long output, small model                                     */
 select mlrl(oxygen,vec_pack_f64([Age, Weight])) from fitness;
 
-
-/* Short output: just the regression coefficients */
+/* Short output: just the regression coefficients               */
 select mlr(oxygen,vec_pack_f64([Age, Weight])) from fitness;
-/* Simple linear regression */
-/* select mlr(oxygen,vec_pack_f64([Age])) from fitness; */
-/* select mlrl(oxygen,vec_pack_f64([Age])) from fitness; */
 
-/* select mlr(oxygen,vec_pack_f64([Age, Weight])) from fitness; */
+/*--------------------------------------------------------------*/
+/* Simple linear regression using the slr() and mlr() functions */
+select slr(oxygen,Age) from fitness;
+/* just the regression coefficients                             */
+select mlr(oxygen,vec_pack_f64([Age])) from fitness; 
+/* detailed (long) output                                       */
+select mlrl(oxygen,vec_pack_f64([Age])) from fitness; 
 
-/* with group by processing */
+/*--------------------------------------------------------------*/
+/* Simple linear regression with group-by                       */
+select slr(oxygen,Age) from fitness group by agegroup;
+/*--------------------------------------------------------------*/
+
+/*--------------------------------------------------------------*/
+/* Multiple linear regression with group by processing          */
 select AgeGroup, mlr(oxygen,vec_pack_f64([Weight, RunPulse])) from fitness group by AgeGroup;
+/*--------------------------------------------------------------*/
 
 
+/*--------------------------------------------------------------*/
+/* Simple linear regression using the slr() and mlr() functions */
+/* with the iris data.                                          */
+/* select slr(sepal_width,sepal_length) from iris;              */
+/* select mlr(sepal_width,vec_pack_f64([sepal_length])) from iris; */
+/*--------------------------------------------------------------*/
+
+
+/*--------------------------------------------------------------*/
+/* Create a table for the CalCOFI bottle data                   */
+/* https://www.kaggle.com/datasets/sohier/calcofi               */
+
+create table if not exists bottle (
+  Cst_Cnt   int default null,
+  Btl_Cnt   int default null,
+  Sta_ID        text  default null,
+  Depth_ID      text  default null,
+  Depthm        int   default null,
+  T_degC        float default null,
+  Salnty        float default null,
+  O2ml_L        float default null,
+  STheta        float default null,
+  O2Sat         float default null,
+  Oxy           float default null,
+  BtlNum        float default null,
+  RecInd        int   default null,
+  T_prec        int   default null,
+  T_qual        int   default null,
+  S_prec        int   default null,
+  S_qual        int   default null,
+  P_qual        int   default null,
+  O_qual        int   default null,
+  SThtaq        int   default null,
+  O2Satq        int   default null,
+  ChlorA        float default null,
+  Chlqua        int   default null,
+  Phaeop        float default null,
+  Phaqua        int   default null,
+  PO4           float default null,
+  PO4q          int   default null,
+  SiO3          float default null,
+  SiO3q         int   default null,
+  NO2           float default null,
+  NO2q          int   default null,
+  NO3           float default null,
+  NO3q          int   default null,
+  NH3           float default null,
+  NH3q          int   default null,
+  C14As1        float default null,
+  C14A1p        float default null,
+  C14Aq         int   default null,
+  C14As2        float default null,
+  C14A2p        float default null,
+  C14A2q        int   default null,
+  DarkAs        float default null,
+  DarkAp        float default null,
+  DarkAq        int   default null,
+  MeanAs        float default null,
+  MeanAp        float default null,
+  MeanAq        int   default null,
+  IncTim        text  default null,
+  LightP        float default null,
+  R_Depth       float default null,
+  R_Temp        float default null,
+  R_PoTemp      float default null,
+  R_Salinity    float default null,
+  R_Sigma       float default null,
+  R_SVA         float default null,
+  R_Dynht       float default null,
+  R_O2          float default null,
+  R_O2Sat       float default null,
+  R_SIO3        float default null,
+  R_PO4         float default null,
+  R_NO3         float default null,
+  R_NO2         float default null,
+  R_NH4         float default null,
+  R_CHLA        float default null,
+  R_PHAEO       float default null,
+  R_Pres        float default null,
+  R_Samp        float default null,
+  DIC1          float default null,
+  DIC2          float default null,
+  TA1           float default null,
+  TA2           float default null,
+  pH2           float default null,
+  pH1           float default null,
+  DICQuality    text default null
+);
+delete from bottle;
+  
+load data local infile './data/bottle.csv'
+  fields terminated by ','
+  optionally enclosed by '"'
+  TRAILING NULLCOLS
+  NULL defined by ''
+  IGNORE 1 lines
+  into table bottle;
+
+/*--------------------------------------------------------------*/
+/* Simple linear regression with mlr() and slr() functions to   */
+/* model Salinity as a function of T_degc                       */
 select slr(Salnty,T_degc) from bottle where T_degc is not null and Salnty is not null;
-
-select slr(sepal_width,sepal_length) from iris;
-select mlr(sepal_width,vec_pack_f64([sepal_length])) from iris;
-
 select mlr(Salnty,vec_pack_f64([T_degc])) from bottle where T_degc is not null and Salnty is not null;
+/*--------------------------------------------------------------*/
+
