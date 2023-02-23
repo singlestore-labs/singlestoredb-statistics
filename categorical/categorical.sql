@@ -157,7 +157,7 @@ as declare
     qstr text;
 begin
     qstr = 'select chisq_agg(NumRows, NumCols, Cell, RowTotal, ColTotal) from (';
-    qstr = concat(qstr,' with ';
+    qstr = concat(qstr,' with ');
     qstr = concat(qstr,' foo as ( select * from ', tbl, ' where ', rowvar, ' is not null and ', colvar, ' is not null),');
     qstr = concat(qstr,' cell_counts as ( select ', rowvar, ' as "Row",', colvar, ' as "Col", sum(',grpvar,') as "Cell" ');
     qstr = concat(qstr,' from foo group by ', rowvar, ', ', colvar, '),');
