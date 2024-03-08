@@ -1,5 +1,7 @@
 # <img src="https://github.com/singlestore-labs/singlestore-python/blob/main/resources/singlestore-logo.png" height="60" valign="middle"/> SingleStoreDB Statistics
 
+**Attention**: The code in this repository is intended for experimental use only and is not fully tested, documented, or supported by SingleStore. Visit the [SingleStore Forums](https://www.singlestore.com/forum/) to ask questions about this repository.
+
 This project contains some basic statistical computations that extend SingleStoreDB with Wasm- (WebAssembly-) based user-defined functions (UDFs, UDAs, TVFs).
 
 ## Correlation
